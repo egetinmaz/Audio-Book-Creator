@@ -1,3 +1,4 @@
 streamlit
 pyttsx3
 PyPDF2
+gtts

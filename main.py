@@ -1,33 +1,33 @@
 import streamlit as st
-import pyttsx3
-import PyPDF2
+from PyPDF2 import PdfReader
+from gtts import gTTS
+import os
 import tempfile
 
 st.set_page_config(page_title="PDF to Speech", layout="centered")
-st.title("📖🔊 PDF to Speech Reader")
 
-uploaded_file = st.file_uploader("Upload a PDF file", type="pdf")
+st.title("📚 PDF to Speech Reader")
+st.markdown("Upload a PDF and listen to it as audio.")
 
-if uploaded_file is not None:
-    st.success("PDF uploaded successfully!")
+uploaded_file = st.file_uploader("Upload a PDF", type=["pdf"])
 
-    if st.button("🔊 Read Aloud"):
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            tmp_file.write(uploaded_file.read())
-            tmp_path = tmp_file.name
+if uploaded_file:
+    try:
+        # Read the PDF
+        reader = PdfReader(uploaded_file)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() or ""
 
-        pdfreader = PyPDF2.PdfReader(tmp_path)
-        pages = len(pdfreader.pages)
+        if text.strip() == "":
+            st.warning("Couldn't extract any text from the PDF.")
+        else:
+            # Convert text to speech using gTTS
+            tts = gTTS(text)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
+                tts.save(tmp_file.name)
+                st.audio(tmp_file.name, format="audio/mp3")
+                st.success("✅ Audio generated successfully!")
 
-        engine = pyttsx3.init()
-
-        for num in range(pages):
-            text = pdfreader.pages[num].extract_text()
-            if text:
-                st.write(f"Reading page {num + 1}...")
-                engine.say(text)
-                engine.runAndWait()
-            else:
-                st.warning(f"No text found on page {num + 1}")
-
-        st.success("Finished reading the PDF aloud.")
+    except Exception as e:
+        st.error(f"⚠️ Something went wrong: {e}")
